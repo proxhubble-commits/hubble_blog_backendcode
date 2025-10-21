@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: hubble-postgres
+    environment:
+      POSTGRES_USER: hubble_user
+      POSTGRES_PASSWORD: hubble_dev_2024
+      POSTGRES_DB: hubble
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hubble_user -d hubble"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: hubble-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Elasticsearch에 한글 형태소 분석기(nori) 플러그인 설치
+  elasticsearch-plugins:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: hubble-es-plugins
+    command: >
+      bash -c "
+        elasticsearch-plugin install analysis-nori &&
+        echo 'Nori plugin installed successfully'
+      "
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    depends_on:
+      - elasticsearch
+
+  # pgAdmin (선택사항)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: hubble-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@hubble.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  es-data:
