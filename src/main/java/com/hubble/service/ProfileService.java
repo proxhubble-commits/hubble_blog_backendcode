@@ -24,6 +24,7 @@ public class ProfileService {
     private final UserMetricsRepository userMetricsRepository;
     private final SkillRepository skillRepository;
     private final UserSkillRepository userSkillRepository;
+    private final SkillAliasRepository skillAliasRepository;
     private final InterestRepository interestRepository;
     private final UserInterestRepository userInterestRepository;
     private final ObjectMapper objectMapper;
